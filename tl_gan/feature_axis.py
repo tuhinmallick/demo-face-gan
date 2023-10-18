@@ -40,8 +40,9 @@ def normalize_feature_axis(feature_slope):
     :return: same shape of input
     """
 
-    feature_direction = feature_slope / np.linalg.norm(feature_slope, ord=2, axis=0, keepdims=True)
-    return feature_direction
+    return feature_slope / np.linalg.norm(
+        feature_slope, ord=2, axis=0, keepdims=True
+    )
 
 
 def disentangle_feature_axis(feature_axis_target, feature_axis_base, yn_base_orthogonalized=False):
@@ -76,13 +77,11 @@ def disentangle_feature_axis(feature_axis_target, feature_axis_base, yn_base_ort
             feature_axis_decorrelated[:, i] = orthogonalize_one_vector(feature_axis_decorrelated[:, i],
                                                                        feature_axis_base_orthononal[:, j])
 
-    # make sure this funciton works to 1D vector
-    if yn_single_vector_in:
-        result = feature_axis_decorrelated[:, 0]
-    else:
-        result = feature_axis_decorrelated
-
-    return result
+    return (
+        feature_axis_decorrelated[:, 0]
+        if yn_single_vector_in
+        else feature_axis_decorrelated
+    )
 
 
 def disentangle_feature_axis_by_idx(feature_axis, idx_base=None, idx_target=None, yn_normalize=True):
@@ -117,12 +116,11 @@ def disentangle_feature_axis_by_idx(feature_axis, idx_base=None, idx_target=None
         feature_axis_disentangled[:, idx_target] = feature_axis_target_orthogonalized
         feature_axis_disentangled[:, idx_base] = feature_axis_base_orthogonalized
 
-    # normalize output
-    if yn_normalize:
-        feature_axis_out = normalize_feature_axis(feature_axis_disentangled)
-    else:
-        feature_axis_out = feature_axis_disentangled
-    return feature_axis_out
+    return (
+        normalize_feature_axis(feature_axis_disentangled)
+        if yn_normalize
+        else feature_axis_disentangled
+    )
 
 
 def orthogonalize_one_vector(vector, vector_base):

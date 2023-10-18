@@ -28,10 +28,10 @@ import dataset
 def generate_fake_images(run_id, snapshot=None, grid_size=[1,1], num_pngs=1, image_shrink=1, png_prefix=None, random_seed=1000, minibatch_size=8):
     network_pkl = misc.locate_network_pkl(run_id, snapshot)
     if png_prefix is None:
-        png_prefix = misc.get_id_string_for_network_pkl(network_pkl) + '-'
+        png_prefix = f'{misc.get_id_string_for_network_pkl(network_pkl)}-'
     random_state = np.random.RandomState(random_seed)
 
-    print('Loading network from "%s"...' % network_pkl)
+    print(f'Loading network from "{network_pkl}"...')
     G, D, Gs = misc.load_network_pkl(run_id, snapshot)
 
     result_subdir = misc.create_result_subdir(config.result_dir, config.desc)
@@ -50,11 +50,11 @@ def generate_fake_images(run_id, snapshot=None, grid_size=[1,1], num_pngs=1, ima
 def generate_interpolation_video(run_id, snapshot=None, grid_size=[1,1], image_shrink=1, image_zoom=1, duration_sec=60.0, smoothing_sec=1.0, mp4=None, mp4_fps=30, mp4_codec='libx265', mp4_bitrate='16M', random_seed=1000, minibatch_size=8):
     network_pkl = misc.locate_network_pkl(run_id, snapshot)
     if mp4 is None:
-        mp4 = misc.get_id_string_for_network_pkl(network_pkl) + '-lerp.mp4'
+        mp4 = f'{misc.get_id_string_for_network_pkl(network_pkl)}-lerp.mp4'
     num_frames = int(np.rint(duration_sec * mp4_fps))
     random_state = np.random.RandomState(random_seed)
 
-    print('Loading network from "%s"...' % network_pkl)
+    print(f'Loading network from "{network_pkl}"...')
     G, D, Gs = misc.load_network_pkl(run_id, snapshot)
 
     print('Generating latent vectors...')
@@ -89,7 +89,7 @@ def generate_interpolation_video(run_id, snapshot=None, grid_size=[1,1], image_s
 def generate_training_video(run_id, duration_sec=20.0, time_warp=1.5, mp4=None, mp4_fps=30, mp4_codec='libx265', mp4_bitrate='16M'):
     src_result_subdir = misc.locate_result_subdir(run_id)
     if mp4 is None:
-        mp4 = os.path.basename(src_result_subdir) + '-train.mp4'
+        mp4 = f'{os.path.basename(src_result_subdir)}-train.mp4'
 
     # Parse log.
     times = []
@@ -162,14 +162,14 @@ def evaluate_metrics(run_id, log, metrics, num_images, real_passes, minibatch_si
     metric_objs = []
     for name in metrics:
         class_name = metric_class_names.get(name, name)
-        print('Initializing %s...' % class_name)
+        print(f'Initializing {class_name}...')
         class_def = tfutil.import_obj(class_name)
         image_shape = [3] + dataset_obj.shape[1:]
         obj = class_def(num_images=num_images, image_shape=image_shape, image_dtype=np.uint8, minibatch_size=minibatch_size)
         tfutil.init_uninited_vars()
         mode = 'warmup'
         obj.begin(mode)
-        for idx in range(10):
+        for _ in range(10):
             obj.feed(mode, np.random.randint(0, 256, size=[minibatch_size]+image_shape, dtype=np.uint8))
         obj.end(mode)
         metric_objs.append(obj)
@@ -208,9 +208,10 @@ def evaluate_metrics(run_id, log, metrics, num_images, real_passes, minibatch_si
                 print(fmt % val, end='')
         print()
 
+    prefix = 'network-snapshot-'
+    postfix = '.pkl'
     # Evaluate each network snapshot.
     for snapshot_idx, snapshot_pkl in enumerate(reversed(snapshot_pkls)):
-        prefix = 'network-snapshot-'; postfix = '.pkl'
         snapshot_name = os.path.basename(snapshot_pkl)
         assert snapshot_name.startswith(prefix) and snapshot_name.endswith(postfix)
         snapshot_kimg = int(snapshot_name[len(prefix) : -len(postfix)])

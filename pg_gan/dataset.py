@@ -230,7 +230,7 @@ def load_dataset(class_name='dataset.TFRecordDataset', data_dir=None, verbose=Fa
     if 'tfrecord_dir' in adjusted_kwargs and data_dir is not None:
         adjusted_kwargs['tfrecord_dir'] = os.path.join(data_dir, adjusted_kwargs['tfrecord_dir'])
     if verbose:
-        print('Streaming data using %s...' % class_name)
+        print(f'Streaming data using {class_name}...')
     dataset = tfutil.import_obj(class_name)(**adjusted_kwargs)
     if verbose:
         print('Dataset shape =', np.int32(dataset.shape).tolist())

@@ -38,7 +38,7 @@ def finalize_descriptors(desc):
 def sliced_wasserstein(A, B, dir_repeats, dirs_per_repeat):
     assert A.ndim == 2 and A.shape == B.shape                           # (neighborhood, descriptor_component)
     results = []
-    for repeat in range(dir_repeats):
+    for _ in range(dir_repeats):
         dirs = np.random.randn(A.shape[1], dirs_per_repeat)             # (descriptor_component, direction)
         dirs /= np.sqrt(np.sum(np.square(dirs), axis=0, keepdims=True)) # normalize descriptor components for each direction
         dirs = dirs.astype(np.float32)
@@ -56,7 +56,7 @@ def downscale_minibatch(minibatch, lod):
     if lod == 0:
         return minibatch
     t = minibatch.astype(np.float32)
-    for i in range(lod):
+    for _ in range(lod):
         t = (t[:, :, 0::2, 0::2] + t[:, :, 0::2, 1::2] + t[:, :, 1::2, 0::2] + t[:, :, 1::2, 1::2]) * 0.25
     return np.round(t).clip(0, 255).astype(np.uint8)
 
@@ -82,7 +82,7 @@ def pyr_up(minibatch): # matches cv2.pyrUp()
 
 def generate_laplacian_pyramid(minibatch, num_levels):
     pyramid = [np.float32(minibatch)]
-    for i in range(1, num_levels):
+    for _ in range(1, num_levels):
         pyramid.append(pyr_down(pyramid[-1]))
         pyramid[-2] -= pyr_up(pyramid[-1])
     return pyramid
@@ -115,7 +115,7 @@ class API:
 
     def begin(self, mode):
         assert mode in ['warmup', 'reals', 'fakes']
-        self.descriptors = [[] for res in self.resolutions]
+        self.descriptors = [[] for _ in self.resolutions]
 
     def feed(self, mode, minibatch):
         for lod, level in enumerate(generate_laplacian_pyramid(minibatch, len(self.resolutions))):
