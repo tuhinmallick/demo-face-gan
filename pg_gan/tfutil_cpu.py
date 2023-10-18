@@ -21,7 +21,7 @@ def run(*args, **kwargs): # Run the specified ops in the default session.
     return tf.get_default_session().run(*args, **kwargs)
 
 def is_tf_expression(x):
-    return isinstance(x, tf.Tensor) or isinstance(x, tf.Variable) or isinstance(x, tf.Operation)
+    return isinstance(x, (tf.Tensor, tf.Variable, tf.Operation))
 
 def shape_to_list(shape):
     return [dim.value for dim in shape]
@@ -47,7 +47,7 @@ def lerp_clip(a, b, t):
         return a + (b - a) * tf.clip_by_value(t, 0.0, 1.0)
 
 def absolute_name_scope(scope): # Forcefully enter the specified name scope, ignoring any surrounding scopes.
-    return tf.name_scope(scope + '/')
+    return tf.name_scope(f'{scope}/')
 
 #----------------------------------------------------------------------------
 # Initialize TensorFlow graph and session using good default settings.
@@ -139,13 +139,13 @@ _autosummary_finalized = False
 def autosummary(name, value):
     id = name.replace('/', '_')
     if is_tf_expression(value):
-        with tf.name_scope('summary_' + id), tf.device(value.device):
+        with (tf.name_scope(f'summary_{id}'), tf.device(value.device)):
             update_op = _create_autosummary_var(name, value)
             with tf.control_dependencies([update_op]):
                 return tf.identity(value)
     else: # python scalar or numpy array
         if name not in _autosummary_immediate:
-            with absolute_name_scope('Autosummary/' + id), tf.device(None), tf.control_dependencies(None):
+            with (absolute_name_scope(f'Autosummary/{id}'), tf.device(None), tf.control_dependencies(None)):
                 update_value = tf.placeholder(tf.float32)
                 update_op = _create_autosummary_var(name, update_value)
                 _autosummary_immediate[name] = update_op, update_value
@@ -161,10 +161,10 @@ def finalize_autosummaries():
         return
     _autosummary_finalized = True
     init_uninited_vars([var for vars in _autosummary_vars.values() for var in vars])
-    with tf.device(None), tf.control_dependencies(None):
+    with (tf.device(None), tf.control_dependencies(None)):
         for name, vars in _autosummary_vars.items():
             id = name.replace('/', '_')
-            with absolute_name_scope('Autosummary/' + id):
+            with absolute_name_scope(f'Autosummary/{id}'):
                 sum = tf.add_n(vars)
                 avg = sum[0] / sum[1]
                 with tf.control_dependencies([avg]): # read before resetting
@@ -290,7 +290,7 @@ class Optimizer:
         assert all(var.device == dev for var in vars)
 
         # Register device and compute gradients.
-        with tf.name_scope(self.id + '_grad'), tf.device(dev):
+        with (tf.name_scope(f'{self.id}_grad'), tf.device(dev)):
             if dev not in self._dev_opt:
                 opt_name = self.scope.replace('/', '_') + '_opt%d' % len(self._dev_opt)
                 self._dev_opt[dev] = self.optimizer_class(name=opt_name, learning_rate=self.learning_rate, **self.optimizer_kwargs)
@@ -306,7 +306,7 @@ class Optimizer:
         self._updates_applied = True
         devices = list(self._dev_grads.keys())
         total_grads = sum(len(grads) for grads in self._dev_grads.values())
-        assert len(devices) >= 1 and total_grads >= 1
+        assert devices and total_grads >= 1
         ops = []
         with absolute_name_scope(self.scope):
 
@@ -334,7 +334,7 @@ class Optimizer:
 
             # Apply updates separately on each device.
             for dev_idx, (dev, grads) in enumerate(dev_grads.items()):
-                with tf.name_scope('ApplyGrads%d' % dev_idx), tf.device(dev):
+                with (tf.name_scope('ApplyGrads%d' % dev_idx), tf.device(dev)):
 
                     # Scale gradients as needed.
                     if self.use_loss_scaling or total_grads > 1:
@@ -361,10 +361,20 @@ class Optimizer:
                     # Report statistics on the last device.
                     if dev == devices[-1]:
                         with tf.name_scope('Statistics'):
-                            ops.append(autosummary(self.id + '/learning_rate', self.learning_rate))
-                            ops.append(autosummary(self.id + '/overflow_frequency', tf.where(grad_ok, 0, 1)))
+                            ops.extend(
+                                (
+                                    autosummary(
+                                        f'{self.id}/learning_rate',
+                                        self.learning_rate,
+                                    ),
+                                    autosummary(
+                                        f'{self.id}/overflow_frequency',
+                                        tf.where(grad_ok, 0, 1),
+                                    ),
+                                )
+                            )
                             if self.use_loss_scaling:
-                                ops.append(autosummary(self.id + '/loss_scaling_log2', ls_var))
+                                ops.append(autosummary(f'{self.id}/loss_scaling_log2', ls_var))
 
             # Initialize variables and group everything into a single op.
             self.reset_optimizer_state()
@@ -380,7 +390,7 @@ class Optimizer:
         if not self.use_loss_scaling:
             return None
         if device not in self._dev_ls_var:
-            with absolute_name_scope(self.scope + '/LossScalingVars'), tf.control_dependencies(None):
+            with (absolute_name_scope(f'{self.scope}/LossScalingVars'), tf.control_dependencies(None)):
                 self._dev_ls_var[device] = tf.Variable(np.float32(self.loss_scaling_init), name='loss_scaling_var')
         return self._dev_ls_var[device]
 
@@ -456,9 +466,12 @@ class Network:
     def _init_graph(self):
         # Collect inputs.
         self.input_names = []
-        for param in inspect.signature(self._build_func).parameters.values():
-            if param.kind == param.POSITIONAL_OR_KEYWORD and param.default is param.empty:
-                self.input_names.append(param.name)
+        self.input_names.extend(
+            param.name
+            for param in inspect.signature(self._build_func).parameters.values()
+            if param.kind == param.POSITIONAL_OR_KEYWORD
+            and param.default is param.empty
+        )
         self.num_inputs = len(self.input_names)
         assert self.num_inputs >= 1
 
@@ -466,7 +479,7 @@ class Network:
         if self.name is None:
             self.name = self._build_func_name
         self.scope = tf.get_default_graph().unique_name(self.name.replace('/', '_'), mark_as_used=False)
-        
+
         # Build template graph.
         with tf.variable_scope(self.scope, reuse=tf.AUTO_REUSE):
             assert tf.get_variable_scope().name == self.scope
@@ -474,21 +487,31 @@ class Network:
                 with tf.control_dependencies(None): # ignore surrounding control_dependencies
                     self.input_templates = [tf.placeholder(tf.float32, name=name) for name in self.input_names]
                     out_expr = self._build_func(*self.input_templates, is_template_graph=True, **self.static_kwargs)
-            
+
         # Collect outputs.
         assert is_tf_expression(out_expr) or isinstance(out_expr, tuple)
         self.output_templates = [out_expr] if is_tf_expression(out_expr) else list(out_expr)
         self.output_names = [t.name.split('/')[-1].split(':')[0] for t in self.output_templates]
         self.num_outputs = len(self.output_templates)
         assert self.num_outputs >= 1
-        
+
         # Populate remaining fields.
         self.input_shapes   = [shape_to_list(t.shape) for t in self.input_templates]
         self.output_shapes  = [shape_to_list(t.shape) for t in self.output_templates]
         self.input_shape    = self.input_shapes[0]
         self.output_shape   = self.output_shapes[0]
-        self.vars           = OrderedDict([(self.get_var_localname(var), var) for var in tf.global_variables(self.scope + '/')])
-        self.trainables     = OrderedDict([(self.get_var_localname(var), var) for var in tf.trainable_variables(self.scope + '/')])
+        self.vars = OrderedDict(
+            [
+                (self.get_var_localname(var), var)
+                for var in tf.global_variables(f'{self.scope}/')
+            ]
+        )
+        self.trainables = OrderedDict(
+            [
+                (self.get_var_localname(var), var)
+                for var in tf.trainable_variables(f'{self.scope}/')
+            ]
+        )
 
     # Run initializers for all variables defined by this network.
     def reset_vars(self):
@@ -516,10 +539,9 @@ class Network:
     def get_var_localname(self, var_or_globalname):
         assert is_tf_expression(var_or_globalname) or isinstance(var_or_globalname, str)
         globalname = var_or_globalname if isinstance(var_or_globalname, str) else var_or_globalname.name
-        assert globalname.startswith(self.scope + '/')
+        assert globalname.startswith(f'{self.scope}/')
         localname = globalname[len(self.scope) + 1:]
-        localname = localname.split(':')[0]
-        return localname
+        return localname.split(':')[0]
 
     # Find variable by local or global name.
     def find_var(self, var_or_localname):
@@ -645,7 +667,7 @@ class Network:
 
         # Build graph.
         if key not in self._run_cache:
-            with absolute_name_scope(self.scope + '/Run'), tf.control_dependencies(None):
+            with (absolute_name_scope(f'{self.scope}/Run'), tf.control_dependencies(None)):
                 in_split = list(zip(*[tf.split(x, num_cpus) for x in self.input_templates]))
                 out_split = []
                 for cpu in range(num_cpus):
@@ -689,11 +711,15 @@ class Network:
     def list_layers(self):
         patterns_to_ignore = ['/Setter', '/new_value', '/Shape', '/strided_slice', '/Cast', '/concat']
         all_ops = tf.get_default_graph().get_operations()
-        all_ops = [op for op in all_ops if not any(p in op.name for p in patterns_to_ignore)]
+        all_ops = [
+            op
+            for op in all_ops
+            if all(p not in op.name for p in patterns_to_ignore)
+        ]
         layers = []
 
         def recurse(scope, parent_ops, level):
-            prefix = scope + '/'
+            prefix = f'{scope}/'
             ops = [op for op in parent_ops if op.name == scope or op.name.startswith(prefix)]
 
             # Does not contain leaf nodes => expand immediate children.
@@ -745,13 +771,13 @@ class Network:
     # Construct summary ops to include histograms of all trainable parameters in TensorBoard.
     def setup_weight_histograms(self, title=None):
         if title is None: title = self.name
-        with tf.name_scope(None), tf.device(None), tf.control_dependencies(None):
+        with (tf.name_scope(None), tf.device(None), tf.control_dependencies(None)):
             for localname, var in self.trainables.items():
                 if '/' in localname:
                     p = localname.split('/')
-                    name = title + '_' + p[-1] + '/' + '_'.join(p[:-1])
+                    name = f'{title}_{p[-1]}/' + '_'.join(p[:-1])
                 else:
-                    name = title + '_toplevel/' + localname
+                    name = f'{title}_toplevel/{localname}'
                 tf.summary.histogram(name, var)
 
 #----------------------------------------------------------------------------

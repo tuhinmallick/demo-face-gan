@@ -66,7 +66,7 @@ def _get_inception_layer(sess):
     layername = 'FID_Inception_Net/pool_3:0'
     pool3 = sess.graph.get_tensor_by_name(layername)
     ops = pool3.graph.get_operations()
-    for op_idx, op in enumerate(ops):
+    for op in ops:
         for o in op.outputs:
             shape = o.get_shape()
             if shape._dims is not None:
@@ -184,7 +184,6 @@ def calculate_activation_statistics(images, sess, batch_size=50, verbose=False):
 def check_or_download_inception(inception_path):
     ''' Checks if the path to the inception file is valid, or downloads
         the file if it is not present. '''
-    INCEPTION_URL = 'http://download.tensorflow.org/models/image/imagenet/inception-2015-12-05.tgz'
     if inception_path is None:
         inception_path = '/tmp'
     inception_path = pathlib.Path(inception_path)
@@ -193,6 +192,7 @@ def check_or_download_inception(inception_path):
         print("Downloading Inception model")
         from urllib import request
         import tarfile
+        INCEPTION_URL = 'http://download.tensorflow.org/models/image/imagenet/inception-2015-12-05.tgz'
         fn, _ = request.urlretrieve(INCEPTION_URL)
         with tarfile.open(fn, mode='r') as f:
             f.extract('classify_image_graph_def.pb', str(model_file.parent))
@@ -218,15 +218,14 @@ def calculate_fid_given_paths(paths, inception_path):
 
     for p in paths:
         if not os.path.exists(p):
-            raise RuntimeError("Invalid path: %s" % p)
+            raise RuntimeError(f"Invalid path: {p}")
 
     create_inception_graph(str(inception_path))
     with tf.Session() as sess:
         sess.run(tf.global_variables_initializer())
         m1, s1 = _handle_path(paths[0], sess)
         m2, s2 = _handle_path(paths[1], sess)
-        fid_value = calculate_frechet_distance(m1, s1, m2, s2)
-        return fid_value
+        return calculate_frechet_distance(m1, s1, m2, s2)
 
 
 if __name__ == "__main__":

@@ -96,7 +96,7 @@ def download_file(file_path):
     # These are handles to two visual elements to animate.
     weights_warning, progress_bar = None, None
     try:
-        weights_warning = st.warning("Downloading %s..." % file_path)
+        weights_warning = st.warning(f"Downloading {file_path}...")
         progress_bar = st.progress(0)
         with open(file_path, "wb") as output_file:
             with urllib.request.urlopen(
@@ -119,7 +119,6 @@ def download_file(file_path):
                     )
                     progress_bar.progress(min(counter / length, 1.0))
 
-    # Finally, we remove these visual elements by calling .empty().
     finally:
         if weights_warning is not None:
             weights_warning.empty()
@@ -174,8 +173,7 @@ def get_random_features(feature_names, seed):
     values within the range [40,60] (out of [0,100]).
     """
     np.random.seed(seed)
-    features = dict((name, 40 + np.random.randint(0, 21)) for name in feature_names)
-    return features
+    return {name: 40 + np.random.randint(0, 21) for name in feature_names}
 
 
 # Hash the TensorFlow session, the pg-GAN model, and the TL-GAN model by id

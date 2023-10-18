@@ -22,11 +22,10 @@ def cset(cur_lambda, new_cond, new_lambda): return lambda: tf.cond(new_cond, new
 def get_weight(shape, gain=np.sqrt(2), use_wscale=False, fan_in=None):
     if fan_in is None: fan_in = np.prod(shape[:-1])
     std = gain / np.sqrt(fan_in) # He init
-    if use_wscale:
-        wscale = tf.constant(np.float32(std), name='wscale')
-        return tf.get_variable('weight', shape=shape, initializer=tf.initializers.random_normal()) * wscale
-    else:
+    if not use_wscale:
         return tf.get_variable('weight', shape=shape, initializer=tf.initializers.random_normal(0, std))
+    wscale = tf.constant(np.float32(std), name='wscale')
+    return tf.get_variable('weight', shape=shape, initializer=tf.initializers.random_normal()) * wscale
 
 #----------------------------------------------------------------------------
 # Fully-connected layer.
@@ -56,11 +55,7 @@ def apply_bias(x):
 #    b = tf.get_variable('bias', shape=[x.shape[1]], initializer=tf.initializers.zeros())
     b = tf.get_variable('bias', shape=[x.shape[-1]], initializer=tf.initializers.zeros())
     b = tf.cast(b, x.dtype)
-    if len(x.shape) == 2:
-        return x + b
-    else:
-#        return x + tf.reshape(b, [1, -1, 1, 1])
-        return x + tf.reshape(b, [1, 1, 1, -1])
+    return x + b if len(x.shape) == 2 else x + tf.reshape(b, [1, 1, 1, -1])
 
 #----------------------------------------------------------------------------
 # Leaky ReLU activation. Same as tf.nn.leaky_relu, but supports FP16.

@@ -63,7 +63,9 @@ def _SSIMForMultiScale(img1, img2, max_val=255, filter_size=11, filter_sigma=1.5
             dimensions: [batch_size, height, width, depth].
     """
     if img1.shape != img2.shape:
-        raise RuntimeError('Input images must have the same shape (%s vs. %s).' % (img1.shape, img2.shape))
+        raise RuntimeError(
+            f'Input images must have the same shape ({img1.shape} vs. {img2.shape}).'
+        )
     if img1.ndim != 4:
         raise RuntimeError('Input images must have four dimensions, not %d' % img1.ndim)
 
@@ -144,7 +146,9 @@ def msssim(img1, img2, max_val=255, filter_size=11, filter_sigma=1.5, k1=0.01, k
             dimensions: [batch_size, height, width, depth].
     """
     if img1.shape != img2.shape:
-        raise RuntimeError('Input images must have the same shape (%s vs. %s).' % (img1.shape, img2.shape))
+        raise RuntimeError(
+            f'Input images must have the same shape ({img1.shape} vs. {img2.shape}).'
+        )
     if img1.ndim != 4:
         raise RuntimeError('Input images must have four dimensions, not %d' % img1.ndim)
 
@@ -190,7 +194,7 @@ class API:
 
     def feed(self, mode, minibatch):
         images = minibatch.transpose(0, 2, 3, 1)
-        score = msssim(images[0::2], images[1::2])
+        score = msssim(images[::2], images[1::2])
         self.sum += score * (images.shape[0] // 2)
 
     def end(self, mode):
