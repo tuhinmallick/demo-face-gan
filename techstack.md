@@ -34,7 +34,7 @@ Full tech stack [here](/techstack.md)
 # Tech Stack File
 ![](https://img.stackshare.io/repo.svg "repo") [tuhinmallick/demo-face-gan](https://github.com/tuhinmallick/demo-face-gan)![](https://img.stackshare.io/public_badge.svg "public")
 <br/><br/>
-|15<br/>Tools used|02/19/24 <br/>Report generated|
+|15<br/>Tools used|02/29/24 <br/>Report generated|
 |------|------|
 </div>
 
@@ -130,7 +130,7 @@ Full tech stack [here](/techstack.md)
 |NAME|VERSION|LAST UPDATED|LAST UPDATED BY|LICENSE|VULNERABILITIES|
 |:------|:------|:------|:------|:------|:------|
 |[black](https://pypi.org/project/black)|N/A|08/04/21|Adrien Treuille |MIT|N/A|
-|[cryptography](https://pypi.org/project/cryptography)|v2.1.4|02/04/20|Hackathon3 EC2 Instance |BSD-3-Clause,Apache-2.0|[CVE-2018-10903](https://github.com/advisories/GHSA-fcf9-3qw3-gxmj) (High)<br/>[CVE-2023-50782](https://github.com/advisories/GHSA-3ww4-gg4f-jr7f) (High)<br/>[CVE-2023-0286](https://github.com/advisories/GHSA-x4qr-2fvf-3mr5) (High)<br/>[CVE-2024-0727](https://github.com/advisories/GHSA-9v9h-cgj8-h64p) (Moderate)<br/>[CVE-2020-25659](https://github.com/advisories/GHSA-hggm-jpg3-v476) (Moderate)<br/>[CVE-2023-23931](https://github.com/advisories/GHSA-w7pp-m8wf-vj6r) (Moderate)<br/>[](https://github.com/advisories/GHSA-5cpq-8wj7-hf2v) (Low)<br/>[](https://github.com/advisories/GHSA-jm77-qphf-c4w8) (Low)|
+|[cryptography](https://pypi.org/project/cryptography)|v2.1.4|02/04/20|Hackathon3 EC2 Instance |BSD-3-Clause,Apache-2.0|[CVE-2023-0286](https://github.com/advisories/GHSA-x4qr-2fvf-3mr5) (High)<br/>[CVE-2018-10903](https://github.com/advisories/GHSA-fcf9-3qw3-gxmj) (High)<br/>[CVE-2023-50782](https://github.com/advisories/GHSA-3ww4-gg4f-jr7f) (High)<br/>[CVE-2020-25659](https://github.com/advisories/GHSA-hggm-jpg3-v476) (Moderate)<br/>[CVE-2023-23931](https://github.com/advisories/GHSA-w7pp-m8wf-vj6r) (Moderate)<br/>[CVE-2024-0727](https://github.com/advisories/GHSA-9v9h-cgj8-h64p) (Moderate)<br/>[](https://github.com/advisories/GHSA-5cpq-8wj7-hf2v) (Low)<br/>[](https://github.com/advisories/GHSA-jm77-qphf-c4w8) (Low)|
 |[h5py](https://pypi.org/project/h5py)|v2.10.0|02/04/20|Hackathon3 EC2 Instance |BSD-3-Clause|N/A|
 |[lmdb](https://pypi.org/project/lmdb)|v0.93|02/04/20|Hackathon3 EC2 Instance |BSD-1-Clause|[CVE-2019-16226](https://github.com/advisories/GHSA-r8g9-w4f3-9crm) (High)|
 |[moviepy](https://pypi.org/project/moviepy)|v0.2.3|02/04/20|Hackathon3 EC2 Instance |MIT|N/A|
